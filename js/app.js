@@ -1,6 +1,49 @@
 $(function () {
 	"use strict";
 
+	function CoordQueue()
+	{
+		this.data = new Int32Array(128);
+		this.index = 0; // read index
+		this.length = 0;
+		this.outX = 0;
+		this.outY = 0;
+	}
+	CoordQueue.prototype = {
+		push: function (x, y) {
+			var data = this.data;
+			var length = this.length;
+			if (this.length == this.data.length) {
+				var newData = new Int32Array(data.length << 1);
+				for (var i = this.index, k = 0;
+					k !== length; ++k) {
+					newData[k] = data[i];
+					++i;
+					if (i == data.length) {
+						i = 0;
+					}
+				}
+				data = this.data = newData;
+				this.index = 0;
+			}
+			var writeIndex = (this.index + length) & (this.data.length - 1);
+			data[writeIndex++] = x;
+			data[writeIndex] = y;
+			this.length += 2;
+		},
+		shift: function () {
+			var data = this.data;
+			if (this.length === 0) {
+				throw new Error("queue empty");
+			}
+			this.outX = data[this.index++];
+			this.outY = data[this.index++];
+			data[this.index - 2] = data[this.index - 1] = -1000000;
+			this.length -= 2;
+			this.index &= data.length - 1;
+		}
+	};
+
 	/*
 	 * @param data{ImageData}
 	 * @param x{Number}
@@ -13,19 +56,21 @@ $(function () {
 			bmp = data.data;
 		var map = new Float32Array(width * height);
 		var queuedMap = new Uint8Array(width * height);
-		var queue = [x, y];
+		var queue = new CoordQueue();
 		var baseR = bmp[((x + y * width) << 2)];
 		var baseG = bmp[((x + y * width) << 2) + 1];
 		var baseB = bmp[((x + y * width) << 2) + 2];
 		var count =  width * height * 8;
+		queue.push(x, y);
 		queuedMap[x + y * width] = 1;
 		var first = true;
 		while (queue.length) {
 			if (count-- < 0) {
 				break;
 			}
-			var cx = queue.shift();
-			var cy = queue.shift();
+			queue.shift();
+			var cx = queue.outX;
+			var cy = queue.outY;
 			queuedMap[cx + cy * width] = 0;
 			var maxProx = 0;
 			if (!first) {
