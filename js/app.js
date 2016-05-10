@@ -147,6 +147,10 @@ $(function () {
 		bestMap = new Float32Array(imgData.width * imgData.height);
 		diffImgData = canvas.getContext("2d").createImageData(imgData.width, imgData.height);
 		outImgData = canvas.getContext("2d").createImageData(imgData.width, imgData.height);
+		$("#canvas-wrapper").css({
+			width: imgData.width * 2,
+			height: imgData.height
+		});
 		render();
 	}
 
